@@ -1,0 +1,14 @@
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+/build/
+/coverage/
+.idea/
+*.iml
+.codex-run/
+.vscode/*
+!.vscode/launch.json
+!.vscode/extensions.json

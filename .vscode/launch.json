@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter (Selected Device)",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": [
+        "--frontend-server-starter-path",
+        "tool/flutter_web_frontend_server_starter.dart"
+      ]
+    },
+    {
+      "name": "Flutter (Chrome Release)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome",
+      "flutterMode": "release"
+    },
+    {
+      "name": "Flutter (Chrome Debug)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--frontend-server-starter-path",
+        "tool/flutter_web_frontend_server_starter.dart"
+      ]
+    },
+    {
+      "name": "Flutter (Windows Debug)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows"
+    },
+    {
+      "name": "Flutter (Profile, Selected Device)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    }
+  ]
+}
