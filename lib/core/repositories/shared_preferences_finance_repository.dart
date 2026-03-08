@@ -47,6 +47,12 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
     await _preferences.setString(_expensesKey, _encodeExpenses(expenses));
   }
 
+  @override
+  Future<void> addIncome(IncomeRecord income) async {
+    final items = _readIncome()..add(income);
+    await _preferences.setString(_incomeKey, _encodeIncome(items));
+  }
+
   Future<void> _seedDefaultsIfNeeded() async {
     final defaults = InMemoryFinanceRepository();
 

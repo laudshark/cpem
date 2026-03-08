@@ -54,8 +54,9 @@ class AppTheme {
         indicatorColor: seed.withValues(alpha: 0.12),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
-            fontWeight:
-                states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
           ),
         ),
       ),
@@ -64,7 +65,8 @@ class AppTheme {
         side: BorderSide.none,
         selectedColor: accent.withValues(alpha: 0.14),
       ),
-      dividerTheme: DividerThemeData(color: Colors.black.withValues(alpha: 0.08)),
+      dividerTheme:
+          DividerThemeData(color: Colors.black.withValues(alpha: 0.08)),
     );
   }
 }

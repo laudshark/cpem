@@ -38,6 +38,11 @@ class InMemoryFinanceRepository implements FinanceRepository {
     _expenses.add(expense);
   }
 
+  @override
+  Future<void> addIncome(IncomeRecord income) async {
+    _income.add(income);
+  }
+
   static List<ContractRecord> _seedContracts() {
     return [
       ContractRecord(

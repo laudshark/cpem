@@ -12,4 +12,6 @@ abstract class FinanceRepository {
   Future<void> addContract(ContractRecord contract);
 
   Future<void> addExpense(ExpenseRecord expense);
+
+  Future<void> addIncome(IncomeRecord income);
 }

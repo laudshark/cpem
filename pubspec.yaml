@@ -7,8 +7,11 @@ environment:
   sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
+  cupertino_icons: ^1.0.8
   flutter:
     sdk: flutter
+  path_provider: ^2.1.5
+  pdf: ^3.11.3
   shared_preferences: ^2.5.4
 
 dev_dependencies:

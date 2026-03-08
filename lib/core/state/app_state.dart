@@ -157,6 +157,29 @@ class AppState extends ChangeNotifier {
     _recordLocalChange();
   }
 
+  Future<void> addIncome({
+    String? contractId,
+    required IncomeType type,
+    required double amount,
+    required DateTime date,
+    required String payer,
+    required String description,
+  }) async {
+    final income = IncomeRecord(
+      id: _generateId('in'),
+      contractId: contractId,
+      type: type,
+      amount: amount,
+      date: _startOfDay(date),
+      payer: payer,
+      description: description,
+    );
+
+    await _repository.addIncome(income);
+    _income = [..._income, income];
+    _recordLocalChange();
+  }
+
   FinancialSummary get businessSummary {
     return FinancialSummary(
       revenue: _income.fold<double>(0, (sum, item) => sum + item.amount),

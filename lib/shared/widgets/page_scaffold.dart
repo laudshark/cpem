@@ -42,9 +42,11 @@ class PageScaffold extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: Theme.of(context).textTheme.headlineMedium),
+                        Text(title,
+                            style: Theme.of(context).textTheme.headlineMedium),
                         const SizedBox(height: 8),
-                        Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
+                        Text(subtitle,
+                            style: Theme.of(context).textTheme.bodyLarge),
                       ],
                     ),
                   ),

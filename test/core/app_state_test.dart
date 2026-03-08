@@ -1,3 +1,4 @@
+import 'package:cpem/core/models/income.dart';
 import 'package:cpem/core/repositories/in_memory_finance_repository.dart';
 import 'package:cpem/core/state/app_state.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,5 +47,28 @@ void main() {
     expect(appState.syncStatus.isOnline, isTrue);
     expect(appState.syncStatus.pendingChanges, 0);
     expect(appState.syncStatus.lastSyncedAt, DateTime(2026, 3, 8, 10, 30));
+  });
+
+  test('adding income persists in state and increments offline sync queue',
+      () async {
+    final initialRevenue = appState.businessSummary.revenue;
+
+    await appState.setConnectivity(false);
+    await appState.addIncome(
+      contractId: 'ct-001',
+      type: IncomeType.milestonePayment,
+      amount: 9200,
+      date: DateTime(2026, 3, 8),
+      payer: 'Accra Metro Works',
+      description: 'Bridge deck inspection payment.',
+    );
+
+    expect(appState.businessSummary.revenue, initialRevenue + 9200);
+    expect(appState.syncStatus.pendingChanges, 3);
+    expect(
+      appState.income
+          .any((item) => item.description == 'Bridge deck inspection payment.'),
+      isTrue,
+    );
   });
 }

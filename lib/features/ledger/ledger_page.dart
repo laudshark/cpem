@@ -4,6 +4,7 @@ import '../../core/models/expense.dart';
 import '../../core/models/income.dart';
 import '../../core/state/app_state.dart';
 import '../../core/utils/formatters.dart';
+import '../../shared/forms/income_form_sheet.dart';
 import '../../shared/widgets/page_scaffold.dart';
 import '../../shared/widgets/section_card.dart';
 
@@ -25,10 +26,11 @@ class LedgerPage extends StatelessWidget {
 
     return PageScaffold(
       title: 'Ledger',
-      subtitle: 'A combined view of outgoing expenses and incoming payments across all business activity.',
+      subtitle:
+          'A combined view of outgoing expenses and incoming payments across all business activity.',
       actions: [
         FilledButton.icon(
-          onPressed: null,
+          onPressed: () => showIncomeFormSheet(context, appState),
           icon: const Icon(Icons.add_card),
           label: const Text('Add income'),
         ),
@@ -43,7 +45,10 @@ class LedgerPage extends StatelessWidget {
         child: Column(
           children: [
             for (var index = 0; index < entries.length; index++) ...[
-              _TransactionRow(entry: entries[index], contractTitle: appState.contractTitle(entries[index].contractId)),
+              _TransactionRow(
+                  entry: entries[index],
+                  contractTitle:
+                      appState.contractTitle(entries[index].contractId)),
               if (index != entries.length - 1) const Divider(height: 24),
             ],
           ],
@@ -108,7 +113,8 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = entry.isIncome ? const Color(0xFF166534) : const Color(0xFFB45309);
+    final color =
+        entry.isIncome ? const Color(0xFF166534) : const Color(0xFFB45309);
     final prefix = entry.isIncome ? '+' : '-';
 
     return Row(
@@ -142,7 +148,10 @@ class _TransactionRow extends StatelessWidget {
           children: [
             Text(
               '$prefix${formatMoney(entry.amount)}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: color),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: color),
             ),
             const SizedBox(height: 4),
             Text(formatDate(entry.date)),

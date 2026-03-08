@@ -4,16 +4,40 @@ import '../../core/models/contract.dart';
 import '../../core/models/financial_summary.dart';
 import '../../core/state/app_state.dart';
 import '../../core/utils/formatters.dart';
+import 'services/report_export_service.dart';
+import 'services/report_export_types.dart';
 import '../../shared/widgets/page_scaffold.dart';
 import '../../shared/widgets/section_card.dart';
 
-class ReportsPage extends StatelessWidget {
-  const ReportsPage({required this.appState, super.key});
+class ReportsPage extends StatefulWidget {
+  const ReportsPage({
+    required this.appState,
+    this.exportService,
+    super.key,
+  });
 
   final AppState appState;
 
+  final ReportExportService? exportService;
+
+  @override
+  State<ReportsPage> createState() => _ReportsPageState();
+}
+
+class _ReportsPageState extends State<ReportsPage> {
+  late final ReportExportService _exportService;
+  bool _isExportingPdf = false;
+  bool _isExportingCsv = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _exportService = widget.exportService ?? createReportExportService();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appState = widget.appState;
     if (appState.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -32,14 +56,18 @@ class ReportsPage extends StatelessWidget {
           'Review profitability trends, spending patterns, and export targets for formal reporting.',
       actions: [
         FilledButton.icon(
-          onPressed: null,
+          onPressed: _isExportingPdf || _isExportingCsv
+              ? null
+              : () => _exportPdf(appState),
           icon: const Icon(Icons.picture_as_pdf_outlined),
-          label: const Text('Export PDF'),
+          label: Text(_isExportingPdf ? 'Exporting...' : 'Export PDF'),
         ),
         OutlinedButton.icon(
-          onPressed: null,
+          onPressed: _isExportingPdf || _isExportingCsv
+              ? null
+              : () => _exportCsv(appState),
           icon: const Icon(Icons.table_chart_outlined),
-          label: const Text('Export CSV'),
+          label: Text(_isExportingCsv ? 'Exporting...' : 'Export CSV'),
         ),
       ],
       child: Column(
@@ -91,6 +119,76 @@ class ReportsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _exportPdf(AppState appState) async {
+    setState(() {
+      _isExportingPdf = true;
+    });
+
+    try {
+      final result = await _exportService.exportPdf(appState);
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('PDF exported to ${result.destinationLabel}.')),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('PDF export failed: ${_errorLabel(error)}')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExportingPdf = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _exportCsv(AppState appState) async {
+    setState(() {
+      _isExportingCsv = true;
+    });
+
+    try {
+      final result = await _exportService.exportCsv(appState);
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('CSV exported to ${result.destinationLabel}.')),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('CSV export failed: ${_errorLabel(error)}')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExportingCsv = false;
+        });
+      }
+    }
+  }
+
+  String _errorLabel(Object error) {
+    final message = error.toString();
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length);
+    }
+    return message;
   }
 }
 
