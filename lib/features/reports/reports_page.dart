@@ -28,7 +28,8 @@ class ReportsPage extends StatelessWidget {
 
     return PageScaffold(
       title: 'Reports & analytics',
-      subtitle: 'Review profitability trends, spending patterns, and export targets for formal reporting.',
+      subtitle:
+          'Review profitability trends, spending patterns, and export targets for formal reporting.',
       actions: [
         FilledButton.icon(
           onPressed: null,
@@ -63,9 +64,11 @@ class ReportsPage extends StatelessWidget {
                   label: 'Export formats',
                   value: 'PDF, Excel, CSV',
                 ),
-                const _ReportChip(
+                _ReportChip(
                   label: 'Offline mode',
-                  value: 'Repository ready',
+                  value: appState.syncStatus.isOnline
+                      ? 'Online | local storage active'
+                      : '${appState.syncStatus.pendingChanges} pending sync changes',
                 ),
               ],
             ),
@@ -76,8 +79,11 @@ class ReportsPage extends StatelessWidget {
             child: Column(
               children: [
                 for (var index = 0; index < monthlyEntries.length; index++) ...[
-                  _MonthlyRow(label: formatMonthKey(monthlyEntries[index].key), summary: monthlyEntries[index].value),
-                  if (index != monthlyEntries.length - 1) const SizedBox(height: 18),
+                  _MonthlyRow(
+                      label: formatMonthKey(monthlyEntries[index].key),
+                      summary: monthlyEntries[index].value),
+                  if (index != monthlyEntries.length - 1)
+                    const SizedBox(height: 18),
                 ],
               ],
             ),
@@ -99,7 +105,8 @@ class _MonthlyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final balanceColor = summary.profit >= 0 ? const Color(0xFF166534) : const Color(0xFFB91C1C);
+    final balanceColor =
+        summary.profit >= 0 ? const Color(0xFF166534) : const Color(0xFFB91C1C);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -120,7 +127,8 @@ class _MonthlyRow extends StatelessWidget {
               Text('Expenses: ${formatMoney(summary.expenses)}'),
               Text(
                 'Profit: ${formatMoney(summary.profit)}',
-                style: TextStyle(color: balanceColor, fontWeight: FontWeight.w700),
+                style:
+                    TextStyle(color: balanceColor, fontWeight: FontWeight.w700),
               ),
               Text('Margin: ${formatPercent(summary.profitMargin)}'),
             ],

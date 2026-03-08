@@ -19,7 +19,8 @@ class ContractsPage extends StatelessWidget {
 
     return PageScaffold(
       title: 'Contracts',
-      subtitle: 'Review contract value, progress windows, and live profitability for each project.',
+      subtitle:
+          'Review contract value, progress windows, and live profitability for each project.',
       actions: [
         FilledButton.icon(
           onPressed: null,
@@ -34,7 +35,8 @@ class ContractsPage extends StatelessWidget {
               contract: appState.contracts[index],
               appState: appState,
             ),
-            if (index != appState.contracts.length - 1) const SizedBox(height: 20),
+            if (index != appState.contracts.length - 1)
+              const SizedBox(height: 20),
           ],
         ],
       ),
@@ -66,11 +68,16 @@ class _ContractCard extends StatelessWidget {
             runSpacing: 10,
             children: [
               _InfoPill(label: 'Client', value: contract.clientName),
-              _InfoPill(label: 'Value', value: formatMoney(contract.contractValue)),
+              _InfoPill(
+                  label: 'Value', value: formatMoney(contract.contractValue)),
+              _InfoPill(
+                  label: 'Budget', value: formatMoney(contract.budgetAmount)),
               _InfoPill(label: 'Start', value: formatDate(contract.startDate)),
               _InfoPill(
                 label: 'End',
-                value: contract.endDate == null ? 'Open' : formatDate(contract.endDate!),
+                value: contract.endDate == null
+                    ? 'Open'
+                    : formatDate(contract.endDate!),
               ),
             ],
           ),
@@ -84,7 +91,8 @@ class _ContractCard extends StatelessWidget {
             expenses: summary.expenses,
             profit: summary.profit,
             margin: summary.profitMargin,
-            budget: contract.contractValue,
+            budget: contract.budgetAmount,
+            contractValue: contract.contractValue,
           ),
         ],
       ),
@@ -146,6 +154,7 @@ class _ContractFinancialBlock extends StatelessWidget {
     required this.profit,
     required this.margin,
     required this.budget,
+    required this.contractValue,
   });
 
   final double revenue;
@@ -153,12 +162,14 @@ class _ContractFinancialBlock extends StatelessWidget {
   final double profit;
   final double margin;
   final double budget;
+  final double contractValue;
 
   @override
   Widget build(BuildContext context) {
     final spendRatio = budget == 0 ? 0.0 : expenses / budget;
     final clampedRatio = spendRatio.clamp(0.0, 1.0);
-    final profitColor = profit >= 0 ? const Color(0xFF166534) : const Color(0xFFB91C1C);
+    final profitColor =
+        profit >= 0 ? const Color(0xFF166534) : const Color(0xFFB91C1C);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +189,8 @@ class _ContractFinancialBlock extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Text('Budget utilization', style: Theme.of(context).textTheme.titleMedium),
+        Text('Budget utilization',
+            style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
@@ -186,11 +198,15 @@ class _ContractFinancialBlock extends StatelessWidget {
             value: clampedRatio,
             minHeight: 12,
             backgroundColor: const Color(0xFFE8E2D6),
-            color: spendRatio > 1 ? const Color(0xFFB91C1C) : const Color(0xFF0F766E),
+            color: spendRatio > 1
+                ? const Color(0xFFB91C1C)
+                : const Color(0xFF0F766E),
           ),
         ),
         const SizedBox(height: 8),
-        Text('${formatMoney(expenses)} spent against ${formatMoney(budget)} contract value'),
+        Text(
+          '${formatMoney(expenses)} spent against ${formatMoney(budget)} working budget for ${formatMoney(contractValue)} contract value',
+        ),
       ],
     );
   }
@@ -223,7 +239,10 @@ class _FinancialChip extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: valueColor),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(color: valueColor),
           ),
         ],
       ),

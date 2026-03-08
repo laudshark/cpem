@@ -36,6 +36,8 @@ class ExpenseRecord {
     required this.description,
     this.contractId,
     this.receiptReference,
+    this.isSettled = true,
+    this.dueDate,
   });
 
   final String id;
@@ -47,4 +49,6 @@ class ExpenseRecord {
   final String vendor;
   final String description;
   final String? receiptReference;
+  final bool isSettled;
+  final DateTime? dueDate;
 }
