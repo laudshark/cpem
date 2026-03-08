@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/contract.dart';
 import '../../core/state/app_state.dart';
 import '../../core/utils/formatters.dart';
+import '../../shared/forms/contract_form_sheet.dart';
 import '../../shared/widgets/page_scaffold.dart';
 import '../../shared/widgets/section_card.dart';
 
@@ -23,7 +24,7 @@ class ContractsPage extends StatelessWidget {
           'Review contract value, progress windows, and live profitability for each project.',
       actions: [
         FilledButton.icon(
-          onPressed: null,
+          onPressed: () => showContractFormSheet(context, appState),
           icon: const Icon(Icons.assignment_add),
           label: const Text('New contract'),
         ),

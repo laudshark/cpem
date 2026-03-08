@@ -103,6 +103,60 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addContract({
+    required String title,
+    required String clientName,
+    required double contractValue,
+    required double budgetAmount,
+    required DateTime startDate,
+    DateTime? endDate,
+    ContractStatus status = ContractStatus.active,
+    String? description,
+  }) async {
+    final contract = ContractRecord(
+      id: _generateId('ct'),
+      title: title,
+      clientName: clientName,
+      contractValue: contractValue,
+      budgetAmount: budgetAmount,
+      startDate: _startOfDay(startDate),
+      endDate: endDate == null ? null : _startOfDay(endDate),
+      status: status,
+      description: _normalizeOptionalText(description),
+    );
+
+    await _repository.addContract(contract);
+    _contracts = [..._contracts, contract];
+    _recordLocalChange();
+  }
+
+  Future<void> addExpense({
+    String? contractId,
+    required ExpenseCategory category,
+    required double amount,
+    required DateTime date,
+    required PaymentMethod paymentMethod,
+    required String vendor,
+    required String description,
+    String? receiptReference,
+  }) async {
+    final expense = ExpenseRecord(
+      id: _generateId('ex'),
+      contractId: contractId,
+      category: category,
+      amount: amount,
+      date: _startOfDay(date),
+      paymentMethod: paymentMethod,
+      vendor: vendor,
+      description: description,
+      receiptReference: _normalizeOptionalText(receiptReference),
+    );
+
+    await _repository.addExpense(expense);
+    _expenses = [..._expenses, expense];
+    _recordLocalChange();
+  }
+
   FinancialSummary get businessSummary {
     return FinancialSummary(
       revenue: _income.fold<double>(0, (sum, item) => sum + item.amount),
@@ -368,6 +422,27 @@ class AppState extends ChangeNotifier {
 
   DateTime _startOfDay(DateTime date) =>
       DateTime(date.year, date.month, date.day);
+
+  void _recordLocalChange() {
+    if (_isOnline) {
+      _lastSyncedAt = _now();
+    } else {
+      _pendingSyncEntries += 1;
+    }
+    notifyListeners();
+  }
+
+  String _generateId(String prefix) {
+    return '$prefix-${_now().microsecondsSinceEpoch}';
+  }
+
+  String? _normalizeOptionalText(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
+  }
 
   String _monthKey(DateTime date) {
     final month = date.month.toString().padLeft(2, '0');

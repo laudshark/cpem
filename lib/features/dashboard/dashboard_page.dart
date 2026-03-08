@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/app_notification.dart';
 import '../../core/state/app_state.dart';
 import '../../core/utils/formatters.dart';
+import '../../shared/forms/expense_form_sheet.dart';
 import '../../shared/widgets/metric_card.dart';
 import '../../shared/widgets/page_scaffold.dart';
 import '../../shared/widgets/section_card.dart';
@@ -31,6 +32,11 @@ class DashboardPage extends StatelessWidget {
       subtitle:
           'Track contracts, daily spending, offline capture, incoming payments, and profitability from one operational view.',
       actions: [
+        FilledButton.icon(
+          onPressed: () => showExpenseFormSheet(context, appState),
+          icon: const Icon(Icons.add),
+          label: const Text('New expense'),
+        ),
         FilledButton.icon(
           onPressed: () {
             appState.setConnectivity(!appState.isOnline);

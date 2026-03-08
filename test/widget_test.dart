@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cpem/app/app.dart';
+import 'package:cpem/core/repositories/in_memory_finance_repository.dart';
 
 void main() {
   testWidgets('app shell renders dashboard content',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const CpemApp());
+    await tester.pumpWidget(CpemApp(repository: InMemoryFinanceRepository()));
     await tester.pumpAndSettle();
 
     expect(find.text('Contract Profit & Expense Manager'), findsOneWidget);

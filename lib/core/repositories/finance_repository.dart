@@ -8,4 +8,8 @@ abstract class FinanceRepository {
   Future<List<ExpenseRecord>> fetchExpenses();
 
   Future<List<IncomeRecord>> fetchIncome();
+
+  Future<void> addContract(ContractRecord contract);
+
+  Future<void> addExpense(ExpenseRecord expense);
 }

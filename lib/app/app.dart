@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../core/repositories/in_memory_finance_repository.dart';
+import '../core/repositories/finance_repository.dart';
 import '../core/state/app_state.dart';
 import '../core/theme/app_theme.dart';
 import '../features/contracts/contracts_page.dart';
@@ -9,7 +9,9 @@ import '../features/ledger/ledger_page.dart';
 import '../features/reports/reports_page.dart';
 
 class CpemApp extends StatefulWidget {
-  const CpemApp({super.key});
+  const CpemApp({required this.repository, super.key});
+
+  final FinanceRepository repository;
 
   @override
   State<CpemApp> createState() => _CpemAppState();
@@ -21,7 +23,7 @@ class _CpemAppState extends State<CpemApp> {
   @override
   void initState() {
     super.initState();
-    _appState = AppState(repository: InMemoryFinanceRepository())..load();
+    _appState = AppState(repository: widget.repository)..load();
   }
 
   @override

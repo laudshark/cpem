@@ -4,8 +4,41 @@ import '../models/income.dart';
 import 'finance_repository.dart';
 
 class InMemoryFinanceRepository implements FinanceRepository {
+  InMemoryFinanceRepository({
+    List<ContractRecord>? contracts,
+    List<ExpenseRecord>? expenses,
+    List<IncomeRecord>? income,
+  })  : _contracts = contracts ?? _seedContracts(),
+        _expenses = expenses ?? _seedExpenses(),
+        _income = income ?? _seedIncome();
+
+  final List<ContractRecord> _contracts;
+  final List<ExpenseRecord> _expenses;
+  final List<IncomeRecord> _income;
+
   @override
-  Future<List<ContractRecord>> fetchContracts() async {
+  Future<List<ContractRecord>> fetchContracts() async =>
+      List<ContractRecord>.from(_contracts);
+
+  @override
+  Future<List<ExpenseRecord>> fetchExpenses() async =>
+      List<ExpenseRecord>.from(_expenses);
+
+  @override
+  Future<List<IncomeRecord>> fetchIncome() async =>
+      List<IncomeRecord>.from(_income);
+
+  @override
+  Future<void> addContract(ContractRecord contract) async {
+    _contracts.add(contract);
+  }
+
+  @override
+  Future<void> addExpense(ExpenseRecord expense) async {
+    _expenses.add(expense);
+  }
+
+  static List<ContractRecord> _seedContracts() {
     return [
       ContractRecord(
         id: 'ct-001',
@@ -41,8 +74,7 @@ class InMemoryFinanceRepository implements FinanceRepository {
     ];
   }
 
-  @override
-  Future<List<ExpenseRecord>> fetchExpenses() async {
+  static List<ExpenseRecord> _seedExpenses() {
     return [
       ExpenseRecord(
         id: 'ex-001',
@@ -177,8 +209,7 @@ class InMemoryFinanceRepository implements FinanceRepository {
     ];
   }
 
-  @override
-  Future<List<IncomeRecord>> fetchIncome() async {
+  static List<IncomeRecord> _seedIncome() {
     return [
       IncomeRecord(
         id: 'in-001',
