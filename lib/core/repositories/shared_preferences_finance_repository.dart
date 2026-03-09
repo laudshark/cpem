@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/contract.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
+import '../models/user_credentials.dart';
 import 'finance_repository.dart';
 import 'in_memory_finance_repository.dart';
 
@@ -14,6 +15,7 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
   static const _contractsKey = 'cpem.contracts';
   static const _expensesKey = 'cpem.expenses';
   static const _incomeKey = 'cpem.income';
+  static const _userCredentialsKey = 'cpem.userCredentials';
 
   final SharedPreferences _preferences;
 
@@ -36,6 +38,10 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
   Future<List<IncomeRecord>> fetchIncome() async => _readIncome();
 
   @override
+  Future<UserCredentials> fetchUserCredentials() async =>
+      _readUserCredentials();
+
+  @override
   Future<void> addContract(ContractRecord contract) async {
     final contracts = _readContracts()..add(contract);
     await _preferences.setString(_contractsKey, _encodeContracts(contracts));
@@ -51,6 +57,14 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
   Future<void> addIncome(IncomeRecord income) async {
     final items = _readIncome()..add(income);
     await _preferences.setString(_incomeKey, _encodeIncome(items));
+  }
+
+  @override
+  Future<void> saveUserCredentials(UserCredentials credentials) async {
+    await _preferences.setString(
+      _userCredentialsKey,
+      jsonEncode(credentials.toJson()),
+    );
   }
 
   Future<void> _seedDefaultsIfNeeded() async {
@@ -74,6 +88,13 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
       await _preferences.setString(
         _incomeKey,
         _encodeIncome(await defaults.fetchIncome()),
+      );
+    }
+
+    if (!_preferences.containsKey(_userCredentialsKey)) {
+      await _preferences.setString(
+        _userCredentialsKey,
+        jsonEncode((await defaults.fetchUserCredentials()).toJson()),
       );
     }
   }
@@ -112,6 +133,16 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
     return decoded
         .map((item) => IncomeRecord.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+
+  UserCredentials _readUserCredentials() {
+    final raw = _preferences.getString(_userCredentialsKey);
+    if (raw == null || raw.isEmpty) {
+      return const UserCredentials.empty();
+    }
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    return UserCredentials.fromJson(decoded);
   }
 
   String _encodeContracts(List<ContractRecord> contracts) {

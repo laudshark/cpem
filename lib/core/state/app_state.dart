@@ -6,6 +6,7 @@ import '../models/expense.dart';
 import '../models/financial_summary.dart';
 import '../models/income.dart';
 import '../models/sync_status.dart';
+import '../models/user_credentials.dart';
 import '../repositories/finance_repository.dart';
 import '../utils/formatters.dart';
 
@@ -27,6 +28,7 @@ class AppState extends ChangeNotifier {
   List<ContractRecord> _contracts = const [];
   List<ExpenseRecord> _expenses = const [];
   List<IncomeRecord> _income = const [];
+  UserCredentials _userCredentials = const UserCredentials.empty();
 
   bool get isLoading => _isLoading;
 
@@ -39,6 +41,8 @@ class AppState extends ChangeNotifier {
   List<ExpenseRecord> get expenses => _expenses;
 
   List<IncomeRecord> get income => _income;
+
+  UserCredentials get userCredentials => _userCredentials;
 
   SyncStatus get syncStatus => SyncStatus(
         isOnline: _isOnline,
@@ -64,10 +68,12 @@ class AppState extends ChangeNotifier {
     final contracts = await _repository.fetchContracts();
     final expenses = await _repository.fetchExpenses();
     final income = await _repository.fetchIncome();
+    final userCredentials = await _repository.fetchUserCredentials();
 
     _contracts = contracts;
     _expenses = expenses;
     _income = income;
+    _userCredentials = userCredentials;
     _lastSyncedAt = _now();
     _isLoading = false;
     notifyListeners();
@@ -177,6 +183,26 @@ class AppState extends ChangeNotifier {
 
     await _repository.addIncome(income);
     _income = [..._income, income];
+    _recordLocalChange();
+  }
+
+  Future<void> saveUserCredentials({
+    required String fullName,
+    required String businessName,
+    required String emailAddress,
+    required String phoneNumber,
+    required String roleTitle,
+  }) async {
+    final credentials = UserCredentials(
+      fullName: fullName.trim(),
+      businessName: businessName.trim(),
+      emailAddress: emailAddress.trim(),
+      phoneNumber: phoneNumber.trim(),
+      roleTitle: roleTitle.trim(),
+    );
+
+    await _repository.saveUserCredentials(credentials);
+    _userCredentials = credentials;
     _recordLocalChange();
   }
 

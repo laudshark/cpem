@@ -14,5 +14,6 @@ void main() {
     expect(find.text('Offline mode'), findsOneWidget);
     expect(find.text('Overview'), findsOneWidget);
     expect(find.text('Contracts'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 }

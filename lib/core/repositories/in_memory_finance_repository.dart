@@ -1,6 +1,7 @@
 import '../models/contract.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
+import '../models/user_credentials.dart';
 import 'finance_repository.dart';
 
 class InMemoryFinanceRepository implements FinanceRepository {
@@ -8,13 +9,16 @@ class InMemoryFinanceRepository implements FinanceRepository {
     List<ContractRecord>? contracts,
     List<ExpenseRecord>? expenses,
     List<IncomeRecord>? income,
+    UserCredentials? userCredentials,
   })  : _contracts = contracts ?? _seedContracts(),
         _expenses = expenses ?? _seedExpenses(),
-        _income = income ?? _seedIncome();
+        _income = income ?? _seedIncome(),
+        _userCredentials = userCredentials ?? const UserCredentials.empty();
 
   final List<ContractRecord> _contracts;
   final List<ExpenseRecord> _expenses;
   final List<IncomeRecord> _income;
+  UserCredentials _userCredentials;
 
   @override
   Future<List<ContractRecord>> fetchContracts() async =>
@@ -29,6 +33,9 @@ class InMemoryFinanceRepository implements FinanceRepository {
       List<IncomeRecord>.from(_income);
 
   @override
+  Future<UserCredentials> fetchUserCredentials() async => _userCredentials;
+
+  @override
   Future<void> addContract(ContractRecord contract) async {
     _contracts.add(contract);
   }
@@ -41,6 +48,11 @@ class InMemoryFinanceRepository implements FinanceRepository {
   @override
   Future<void> addIncome(IncomeRecord income) async {
     _income.add(income);
+  }
+
+  @override
+  Future<void> saveUserCredentials(UserCredentials credentials) async {
+    _userCredentials = credentials;
   }
 
   static List<ContractRecord> _seedContracts() {

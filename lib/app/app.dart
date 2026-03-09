@@ -7,6 +7,7 @@ import '../features/contracts/contracts_page.dart';
 import '../features/dashboard/dashboard_page.dart';
 import '../features/ledger/ledger_page.dart';
 import '../features/reports/reports_page.dart';
+import '../features/settings/settings_page.dart';
 
 class CpemApp extends StatefulWidget {
   const CpemApp({required this.repository, super.key});
@@ -65,6 +66,7 @@ class _AppShellState extends State<AppShell> {
           ContractsPage(appState: widget.appState),
           LedgerPage(appState: widget.appState),
           ReportsPage(appState: widget.appState),
+          SettingsPage(appState: widget.appState),
         ];
 
         return Scaffold(
@@ -91,6 +93,11 @@ class _AppShellState extends State<AppShell> {
                 icon: Icon(Icons.analytics_outlined),
                 selectedIcon: Icon(Icons.analytics),
                 label: 'Reports',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings),
+                label: 'Settings',
               ),
             ],
             onDestinationSelected: (index) {

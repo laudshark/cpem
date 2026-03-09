@@ -1,6 +1,7 @@
 import 'package:cpem/core/models/contract.dart';
 import 'package:cpem/core/models/expense.dart';
 import 'package:cpem/core/models/income.dart';
+import 'package:cpem/core/models/user_credentials.dart';
 import 'package:cpem/core/repositories/shared_preferences_finance_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,7 @@ void main() {
     final initialContracts = await repository.fetchContracts();
     final initialExpenses = await repository.fetchExpenses();
     final initialIncome = await repository.fetchIncome();
+    final initialCredentials = await repository.fetchUserCredentials();
 
     await repository.addContract(
       ContractRecord(
@@ -57,18 +59,32 @@ void main() {
       ),
     );
 
+    await repository.saveUserCredentials(
+      const UserCredentials(
+        fullName: 'Persisted User',
+        businessName: 'Persisted Business',
+        emailAddress: 'persisted@example.com',
+        phoneNumber: '+123456789',
+        roleTitle: 'Owner',
+      ),
+    );
+
     final reloadedRepository = await SharedPreferencesFinanceRepository.create(
       preferences: await SharedPreferences.getInstance(),
     );
     final contracts = await reloadedRepository.fetchContracts();
     final expenses = await reloadedRepository.fetchExpenses();
     final income = await reloadedRepository.fetchIncome();
+    final credentials = await reloadedRepository.fetchUserCredentials();
 
     expect(contracts.length, initialContracts.length + 1);
     expect(expenses.length, initialExpenses.length + 1);
     expect(income.length, initialIncome.length + 1);
+    expect(initialCredentials.fullName, isEmpty);
     expect(contracts.any((item) => item.id == 'ct-test'), isTrue);
     expect(expenses.any((item) => item.id == 'ex-test'), isTrue);
     expect(income.any((item) => item.id == 'in-test'), isTrue);
+    expect(credentials.fullName, 'Persisted User');
+    expect(credentials.businessName, 'Persisted Business');
   });
 }

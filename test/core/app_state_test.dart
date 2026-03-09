@@ -71,4 +71,21 @@ void main() {
       isTrue,
     );
   });
+
+  test('saving credentials updates local settings state', () async {
+    expect(appState.userCredentials.fullName, isEmpty);
+
+    await appState.saveUserCredentials(
+      fullName: 'Laud Shark',
+      businessName: 'Shark Contracting',
+      emailAddress: 'laud@example.com',
+      phoneNumber: '+233200000000',
+      roleTitle: 'Managing Director',
+    );
+
+    expect(appState.userCredentials.fullName, 'Laud Shark');
+    expect(appState.userCredentials.businessName, 'Shark Contracting');
+    expect(appState.userCredentials.emailAddress, 'laud@example.com');
+    expect(appState.userCredentials.completionLabel, 'Ready');
+  });
 }
