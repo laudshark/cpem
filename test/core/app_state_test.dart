@@ -1,3 +1,5 @@
+import 'package:cpem/core/models/app_notification.dart';
+import 'package:cpem/core/models/expense.dart';
 import 'package:cpem/core/models/income.dart';
 import 'package:cpem/core/repositories/in_memory_finance_repository.dart';
 import 'package:cpem/core/state/app_state.dart';
@@ -87,5 +89,46 @@ void main() {
     expect(appState.userCredentials.businessName, 'Shark Contracting');
     expect(appState.userCredentials.emailAddress, 'laud@example.com');
     expect(appState.userCredentials.completionLabel, 'Ready');
+  });
+
+  test('preferences control notifications and auto sync behavior', () async {
+    await appState.saveAppPreferences(
+      autoSyncEnabled: false,
+      budgetAlertsEnabled: false,
+      weeklySummaryEnabled: true,
+      overduePaymentsEnabled: false,
+      contractRiskAlertsEnabled: true,
+    );
+
+    expect(appState.appPreferences.autoSyncEnabled, isFalse);
+    expect(appState.syncStatus.autoSyncEnabled, isFalse);
+    expect(
+      appState.notifications.map((item) => item.type),
+      isNot(contains(AppNotificationType.budgetExceeded)),
+    );
+    expect(
+      appState.notifications.map((item) => item.type),
+      isNot(contains(AppNotificationType.overdueSupplierPayment)),
+    );
+    expect(
+      appState.notifications.map((item) => item.type),
+      contains(AppNotificationType.weeklySummary),
+    );
+
+    await appState.setConnectivity(false);
+    await appState.addExpense(
+      category: ExpenseCategory.miscellaneous,
+      amount: 100,
+      date: DateTime(2026, 3, 8),
+      paymentMethod: PaymentMethod.cash,
+      vendor: 'Test Vendor',
+      description: 'Offline test change',
+    );
+
+    expect(appState.syncStatus.pendingChanges, 3);
+
+    await appState.setConnectivity(true);
+
+    expect(appState.syncStatus.pendingChanges, 3);
   });
 }

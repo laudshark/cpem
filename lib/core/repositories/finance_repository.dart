@@ -1,3 +1,4 @@
+import '../models/app_preferences.dart';
 import '../models/contract.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
@@ -10,6 +11,8 @@ abstract class FinanceRepository {
 
   Future<List<IncomeRecord>> fetchIncome();
 
+  Future<AppPreferences> fetchAppPreferences();
+
   Future<UserCredentials> fetchUserCredentials();
 
   Future<void> addContract(ContractRecord contract);
@@ -17,6 +20,8 @@ abstract class FinanceRepository {
   Future<void> addExpense(ExpenseRecord expense);
 
   Future<void> addIncome(IncomeRecord income);
+
+  Future<void> saveAppPreferences(AppPreferences preferences);
 
   Future<void> saveUserCredentials(UserCredentials credentials);
 }

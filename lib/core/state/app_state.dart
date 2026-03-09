@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/app_preferences.dart';
 import '../models/app_notification.dart';
 import '../models/contract.dart';
 import '../models/expense.dart';
@@ -28,6 +29,7 @@ class AppState extends ChangeNotifier {
   List<ContractRecord> _contracts = const [];
   List<ExpenseRecord> _expenses = const [];
   List<IncomeRecord> _income = const [];
+  AppPreferences _appPreferences = const AppPreferences.defaults();
   UserCredentials _userCredentials = const UserCredentials.empty();
 
   bool get isLoading => _isLoading;
@@ -42,13 +44,15 @@ class AppState extends ChangeNotifier {
 
   List<IncomeRecord> get income => _income;
 
+  AppPreferences get appPreferences => _appPreferences;
+
   UserCredentials get userCredentials => _userCredentials;
 
   SyncStatus get syncStatus => SyncStatus(
         isOnline: _isOnline,
         isSyncing: _isSyncing,
         localStorageEnabled: true,
-        autoSyncEnabled: true,
+        autoSyncEnabled: _appPreferences.autoSyncEnabled,
         pendingChanges: _pendingSyncEntries,
         lastSyncedAt: _lastSyncedAt,
       );
@@ -68,11 +72,13 @@ class AppState extends ChangeNotifier {
     final contracts = await _repository.fetchContracts();
     final expenses = await _repository.fetchExpenses();
     final income = await _repository.fetchIncome();
+    final appPreferences = await _repository.fetchAppPreferences();
     final userCredentials = await _repository.fetchUserCredentials();
 
     _contracts = contracts;
     _expenses = expenses;
     _income = income;
+    _appPreferences = appPreferences;
     _userCredentials = userCredentials;
     _lastSyncedAt = _now();
     _isLoading = false;
@@ -90,7 +96,7 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
 
-    if (isOnline) {
+    if (isOnline && _appPreferences.autoSyncEnabled) {
       await syncPendingChanges();
     }
   }
@@ -206,6 +212,26 @@ class AppState extends ChangeNotifier {
     _recordLocalChange();
   }
 
+  Future<void> saveAppPreferences({
+    required bool autoSyncEnabled,
+    required bool budgetAlertsEnabled,
+    required bool weeklySummaryEnabled,
+    required bool overduePaymentsEnabled,
+    required bool contractRiskAlertsEnabled,
+  }) async {
+    final preferences = AppPreferences(
+      autoSyncEnabled: autoSyncEnabled,
+      budgetAlertsEnabled: budgetAlertsEnabled,
+      weeklySummaryEnabled: weeklySummaryEnabled,
+      overduePaymentsEnabled: overduePaymentsEnabled,
+      contractRiskAlertsEnabled: contractRiskAlertsEnabled,
+    );
+
+    await _repository.saveAppPreferences(preferences);
+    _appPreferences = preferences;
+    _recordLocalChange();
+  }
+
   FinancialSummary get businessSummary {
     return FinancialSummary(
       revenue: _income.fold<double>(0, (sum, item) => sum + item.amount),
@@ -282,7 +308,8 @@ class AppState extends ChangeNotifier {
   List<AppNotification> get notifications {
     final items = <AppNotification>[];
 
-    if (budgetExceededContracts.isNotEmpty) {
+    if (_appPreferences.budgetAlertsEnabled &&
+        budgetExceededContracts.isNotEmpty) {
       final overrunTotal =
           budgetExceededContracts.fold<double>(0, (sum, contract) {
         return sum +
@@ -303,7 +330,8 @@ class AppState extends ChangeNotifier {
       );
     }
 
-    if (contractsNearingLoss.isNotEmpty) {
+    if (_appPreferences.contractRiskAlertsEnabled &&
+        contractsNearingLoss.isNotEmpty) {
       final contract = contractsNearingLoss.first;
       items.add(
         AppNotification(
@@ -316,7 +344,8 @@ class AppState extends ChangeNotifier {
       );
     }
 
-    if (overdueSupplierExpenses.isNotEmpty) {
+    if (_appPreferences.overduePaymentsEnabled &&
+        overdueSupplierExpenses.isNotEmpty) {
       final overdueTotal = overdueSupplierExpenses.fold<double>(
         0,
         (sum, entry) => sum + entry.amount,
@@ -332,16 +361,18 @@ class AppState extends ChangeNotifier {
       );
     }
 
-    final weeklySummary = currentWeekSummary;
-    items.add(
-      AppNotification(
-        type: AppNotificationType.weeklySummary,
-        severity: AppNotificationSeverity.info,
-        title: 'Weekly financial summary',
-        message:
-            'Revenue ${formatMoney(weeklySummary.revenue)}, expenses ${formatMoney(weeklySummary.expenses)}, net ${formatMoney(weeklySummary.profit)}.',
-      ),
-    );
+    if (_appPreferences.weeklySummaryEnabled) {
+      final weeklySummary = currentWeekSummary;
+      items.add(
+        AppNotification(
+          type: AppNotificationType.weeklySummary,
+          severity: AppNotificationSeverity.info,
+          title: 'Weekly financial summary',
+          message:
+              'Revenue ${formatMoney(weeklySummary.revenue)}, expenses ${formatMoney(weeklySummary.expenses)}, net ${formatMoney(weeklySummary.profit)}.',
+        ),
+      );
+    }
 
     return items;
   }

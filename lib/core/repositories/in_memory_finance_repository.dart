@@ -1,3 +1,4 @@
+import '../models/app_preferences.dart';
 import '../models/contract.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
@@ -9,15 +10,18 @@ class InMemoryFinanceRepository implements FinanceRepository {
     List<ContractRecord>? contracts,
     List<ExpenseRecord>? expenses,
     List<IncomeRecord>? income,
+    AppPreferences? appPreferences,
     UserCredentials? userCredentials,
   })  : _contracts = contracts ?? _seedContracts(),
         _expenses = expenses ?? _seedExpenses(),
         _income = income ?? _seedIncome(),
+        _appPreferences = appPreferences ?? const AppPreferences.defaults(),
         _userCredentials = userCredentials ?? const UserCredentials.empty();
 
   final List<ContractRecord> _contracts;
   final List<ExpenseRecord> _expenses;
   final List<IncomeRecord> _income;
+  AppPreferences _appPreferences;
   UserCredentials _userCredentials;
 
   @override
@@ -31,6 +35,9 @@ class InMemoryFinanceRepository implements FinanceRepository {
   @override
   Future<List<IncomeRecord>> fetchIncome() async =>
       List<IncomeRecord>.from(_income);
+
+  @override
+  Future<AppPreferences> fetchAppPreferences() async => _appPreferences;
 
   @override
   Future<UserCredentials> fetchUserCredentials() async => _userCredentials;
@@ -48,6 +55,11 @@ class InMemoryFinanceRepository implements FinanceRepository {
   @override
   Future<void> addIncome(IncomeRecord income) async {
     _income.add(income);
+  }
+
+  @override
+  Future<void> saveAppPreferences(AppPreferences preferences) async {
+    _appPreferences = preferences;
   }
 
   @override

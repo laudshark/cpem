@@ -1,3 +1,4 @@
+import 'package:cpem/core/models/app_preferences.dart';
 import 'package:cpem/core/models/contract.dart';
 import 'package:cpem/core/models/expense.dart';
 import 'package:cpem/core/models/income.dart';
@@ -21,6 +22,7 @@ void main() {
     final initialContracts = await repository.fetchContracts();
     final initialExpenses = await repository.fetchExpenses();
     final initialIncome = await repository.fetchIncome();
+    final initialPreferences = await repository.fetchAppPreferences();
     final initialCredentials = await repository.fetchUserCredentials();
 
     await repository.addContract(
@@ -69,21 +71,35 @@ void main() {
       ),
     );
 
+    await repository.saveAppPreferences(
+      const AppPreferences(
+        autoSyncEnabled: false,
+        budgetAlertsEnabled: true,
+        weeklySummaryEnabled: false,
+        overduePaymentsEnabled: true,
+        contractRiskAlertsEnabled: false,
+      ),
+    );
+
     final reloadedRepository = await SharedPreferencesFinanceRepository.create(
       preferences: await SharedPreferences.getInstance(),
     );
     final contracts = await reloadedRepository.fetchContracts();
     final expenses = await reloadedRepository.fetchExpenses();
     final income = await reloadedRepository.fetchIncome();
+    final appPreferences = await reloadedRepository.fetchAppPreferences();
     final credentials = await reloadedRepository.fetchUserCredentials();
 
     expect(contracts.length, initialContracts.length + 1);
     expect(expenses.length, initialExpenses.length + 1);
     expect(income.length, initialIncome.length + 1);
+    expect(initialPreferences.autoSyncEnabled, isTrue);
     expect(initialCredentials.fullName, isEmpty);
     expect(contracts.any((item) => item.id == 'ct-test'), isTrue);
     expect(expenses.any((item) => item.id == 'ex-test'), isTrue);
     expect(income.any((item) => item.id == 'in-test'), isTrue);
+    expect(appPreferences.autoSyncEnabled, isFalse);
+    expect(appPreferences.weeklySummaryEnabled, isFalse);
     expect(credentials.fullName, 'Persisted User');
     expect(credentials.businessName, 'Persisted Business');
   });

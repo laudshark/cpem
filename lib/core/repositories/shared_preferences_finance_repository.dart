@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/app_preferences.dart';
 import '../models/contract.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
@@ -15,6 +16,7 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
   static const _contractsKey = 'cpem.contracts';
   static const _expensesKey = 'cpem.expenses';
   static const _incomeKey = 'cpem.income';
+  static const _appPreferencesKey = 'cpem.appPreferences';
   static const _userCredentialsKey = 'cpem.userCredentials';
 
   final SharedPreferences _preferences;
@@ -38,6 +40,9 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
   Future<List<IncomeRecord>> fetchIncome() async => _readIncome();
 
   @override
+  Future<AppPreferences> fetchAppPreferences() async => _readAppPreferences();
+
+  @override
   Future<UserCredentials> fetchUserCredentials() async =>
       _readUserCredentials();
 
@@ -57,6 +62,14 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
   Future<void> addIncome(IncomeRecord income) async {
     final items = _readIncome()..add(income);
     await _preferences.setString(_incomeKey, _encodeIncome(items));
+  }
+
+  @override
+  Future<void> saveAppPreferences(AppPreferences preferences) async {
+    await _preferences.setString(
+      _appPreferencesKey,
+      jsonEncode(preferences.toJson()),
+    );
   }
 
   @override
@@ -88,6 +101,13 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
       await _preferences.setString(
         _incomeKey,
         _encodeIncome(await defaults.fetchIncome()),
+      );
+    }
+
+    if (!_preferences.containsKey(_appPreferencesKey)) {
+      await _preferences.setString(
+        _appPreferencesKey,
+        jsonEncode((await defaults.fetchAppPreferences()).toJson()),
       );
     }
 
@@ -133,6 +153,16 @@ class SharedPreferencesFinanceRepository implements FinanceRepository {
     return decoded
         .map((item) => IncomeRecord.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+
+  AppPreferences _readAppPreferences() {
+    final raw = _preferences.getString(_appPreferencesKey);
+    if (raw == null || raw.isEmpty) {
+      return const AppPreferences.defaults();
+    }
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    return AppPreferences.fromJson(decoded);
   }
 
   UserCredentials _readUserCredentials() {

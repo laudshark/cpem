@@ -20,7 +20,13 @@ class _SettingsPageState extends State<SettingsPage> {
   late final TextEditingController _emailAddressController;
   late final TextEditingController _phoneNumberController;
   late final TextEditingController _roleTitleController;
-  bool _isSaving = false;
+  bool _autoSyncEnabled = true;
+  bool _budgetAlertsEnabled = true;
+  bool _weeklySummaryEnabled = true;
+  bool _overduePaymentsEnabled = true;
+  bool _contractRiskAlertsEnabled = true;
+  bool _isSavingCredentials = false;
+  bool _isSavingPreferences = false;
 
   @override
   void initState() {
@@ -34,6 +40,12 @@ class _SettingsPageState extends State<SettingsPage> {
     _phoneNumberController =
         TextEditingController(text: credentials.phoneNumber);
     _roleTitleController = TextEditingController(text: credentials.roleTitle);
+    final preferences = widget.appState.appPreferences;
+    _autoSyncEnabled = preferences.autoSyncEnabled;
+    _budgetAlertsEnabled = preferences.budgetAlertsEnabled;
+    _weeklySummaryEnabled = preferences.weeklySummaryEnabled;
+    _overduePaymentsEnabled = preferences.overduePaymentsEnabled;
+    _contractRiskAlertsEnabled = preferences.contractRiskAlertsEnabled;
   }
 
   @override
@@ -53,11 +65,12 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     final credentials = widget.appState.userCredentials;
+    final preferences = widget.appState.appPreferences;
 
     return PageScaffold(
       title: 'Settings',
       subtitle:
-          'Store your business identity and contact credentials locally so reports and future sync features can use the right account details.',
+          'Store your business identity, sync controls, and alert preferences locally so the app matches how you operate.',
       eyebrow: 'User profile',
       headerIcon: Icons.settings_rounded,
       accentColor: const Color(0xFF334155),
@@ -72,23 +85,19 @@ class _SettingsPageState extends State<SettingsPage> {
               credentials.fullName.isEmpty ? 'Not set' : credentials.fullName,
         ),
         PageHeaderHighlight(
-          label: 'Business',
-          value: credentials.businessName.isEmpty
-              ? 'Not set'
-              : credentials.businessName,
+          label: 'Alerts enabled',
+          value: '${preferences.enabledNotificationCount} active',
         ),
         PageHeaderHighlight(
-          label: 'Contact',
-          value: credentials.emailAddress.isEmpty
-              ? 'Not set'
-              : credentials.emailAddress,
+          label: 'Sync mode',
+          value: _autoSyncEnabled ? 'Automatic' : 'Manual',
         ),
       ],
       actions: [
         FilledButton.icon(
-          onPressed: _isSaving ? null : _saveCredentials,
+          onPressed: _isSavingCredentials ? null : _saveCredentials,
           icon: const Icon(Icons.save_outlined),
-          label: Text(_isSaving ? 'Saving...' : 'Save credentials'),
+          label: Text(_isSavingCredentials ? 'Saving...' : 'Save credentials'),
         ),
       ],
       child: Column(
@@ -150,15 +159,112 @@ class _SettingsPageState extends State<SettingsPage> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: FilledButton.icon(
-                                onPressed: _isSaving ? null : _saveCredentials,
+                                onPressed: _isSavingCredentials
+                                    ? null
+                                    : _saveCredentials,
                                 icon: const Icon(Icons.save_outlined),
                                 label: Text(
-                                  _isSaving ? 'Saving...' : 'Save credentials',
+                                  _isSavingCredentials
+                                      ? 'Saving...'
+                                      : 'Save credentials',
                                 ),
                               ),
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: SectionCard(
+                      title: 'Operational preferences',
+                      child: Column(
+                        children: [
+                          _PreferenceSwitchTile(
+                            title: 'Automatic synchronization',
+                            subtitle:
+                                'Sync pending changes automatically when the app comes back online.',
+                            value: _autoSyncEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                _autoSyncEnabled = value;
+                              });
+                            },
+                          ),
+                          const Divider(height: 24),
+                          _PreferenceSwitchTile(
+                            title: 'Budget exceeded alerts',
+                            subtitle:
+                                'Show alerts when active contracts spend beyond their planned budget.',
+                            value: _budgetAlertsEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                _budgetAlertsEnabled = value;
+                              });
+                            },
+                          ),
+                          const Divider(height: 24),
+                          _PreferenceSwitchTile(
+                            title: 'Weekly financial summary',
+                            subtitle:
+                                'Keep the weekly revenue, expense, and net summary visible in alerts.',
+                            value: _weeklySummaryEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                _weeklySummaryEnabled = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: FilledButton.icon(
+                              onPressed: _isSavingPreferences
+                                  ? null
+                                  : _savePreferences,
+                              icon: const Icon(Icons.tune_rounded),
+                              label: Text(
+                                _isSavingPreferences
+                                    ? 'Saving...'
+                                    : 'Save preferences',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: SectionCard(
+                      title: 'Notification preferences',
+                      child: Column(
+                        children: [
+                          _PreferenceSwitchTile(
+                            title: 'Overdue supplier payment alerts',
+                            subtitle:
+                                'Warn when supplier payments remain unpaid past their due dates.',
+                            value: _overduePaymentsEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                _overduePaymentsEnabled = value;
+                              });
+                            },
+                          ),
+                          const Divider(height: 24),
+                          _PreferenceSwitchTile(
+                            title: 'Contract risk alerts',
+                            subtitle:
+                                'Highlight active contracts whose projected margin is getting too low.',
+                            value: _contractRiskAlertsEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                _contractRiskAlertsEnabled = value;
+                              });
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -189,11 +295,22 @@ class _SettingsPageState extends State<SettingsPage> {
                             icon: Icons.sync_outlined,
                             title: 'Sync readiness',
                             subtitle: widget.appState.syncStatus.isOnline
-                                ? 'Saved credentials can be synchronized when connected services are added.'
+                                ? _autoSyncEnabled
+                                    ? 'Pending changes will sync automatically when connectivity is available.'
+                                    : 'Sync is online but requires a manual action because automatic sync is turned off.'
                                 : '${widget.appState.syncStatus.pendingChanges} local changes are waiting while offline.',
                             value: widget.appState.syncStatus.isOnline
-                                ? 'Online'
+                                ? (_autoSyncEnabled ? 'Auto' : 'Manual')
                                 : 'Offline',
+                          ),
+                          const Divider(height: 24),
+                          _SettingsInfoRow(
+                            icon: Icons.notifications_active_outlined,
+                            title: 'Alert coverage',
+                            subtitle:
+                                'Control how many dashboard and report alerts remain active in the app.',
+                            value:
+                                '${preferences.enabledNotificationCount} enabled',
                           ),
                         ],
                       ),
@@ -233,7 +350,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     setState(() {
-      _isSaving = true;
+      _isSavingCredentials = true;
     });
 
     await widget.appState.saveUserCredentials(
@@ -249,11 +366,37 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     setState(() {
-      _isSaving = false;
+      _isSavingCredentials = false;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Credentials saved locally.')),
+    );
+  }
+
+  Future<void> _savePreferences() async {
+    setState(() {
+      _isSavingPreferences = true;
+    });
+
+    await widget.appState.saveAppPreferences(
+      autoSyncEnabled: _autoSyncEnabled,
+      budgetAlertsEnabled: _budgetAlertsEnabled,
+      weeklySummaryEnabled: _weeklySummaryEnabled,
+      overduePaymentsEnabled: _overduePaymentsEnabled,
+      contractRiskAlertsEnabled: _contractRiskAlertsEnabled,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSavingPreferences = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Preferences saved locally.')),
     );
   }
 
@@ -275,6 +418,34 @@ class _SettingsPageState extends State<SettingsPage> {
       return 'Enter a valid email address';
     }
     return null;
+  }
+}
+
+class _PreferenceSwitchTile extends StatelessWidget {
+  const _PreferenceSwitchTile({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      value: value,
+      onChanged: onChanged,
+      title: Text(title, style: Theme.of(context).textTheme.titleMedium),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Text(subtitle),
+      ),
+    );
   }
 }
 
