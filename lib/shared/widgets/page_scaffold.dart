@@ -202,6 +202,8 @@ class _SpotlightHeader extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth > 960;
+                final actionPanelWidth =
+                    constraints.maxWidth > 1240 ? 320.0 : 280.0;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,14 +220,19 @@ class _SpotlightHeader extends StatelessWidget {
                               statusLabel: statusLabel,
                               badgeColor: badgeColor,
                               headerIcon: headerIcon,
-                              highlights: highlights,
                             ),
                           ),
                           if (actions.isNotEmpty) ...[
                             const SizedBox(width: 20),
                             ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 320),
-                              child: _HeaderActionPanel(actions: actions),
+                              constraints: BoxConstraints(
+                                minWidth: 232,
+                                maxWidth: actionPanelWidth,
+                              ),
+                              child: _HeaderActionPanel(
+                                actions: actions,
+                                expand: false,
+                              ),
                             ),
                           ],
                         ],
@@ -238,12 +245,18 @@ class _SpotlightHeader extends StatelessWidget {
                         statusLabel: statusLabel,
                         badgeColor: badgeColor,
                         headerIcon: headerIcon,
-                        highlights: highlights,
                       ),
                       if (actions.isNotEmpty) ...[
                         const SizedBox(height: 18),
-                        _HeaderActionPanel(actions: actions),
+                        _HeaderActionPanel(
+                          actions: actions,
+                          expand: true,
+                        ),
                       ],
+                    ],
+                    if (highlights.isNotEmpty) ...[
+                      const SizedBox(height: 22),
+                      _HeaderHighlightGrid(highlights: highlights),
                     ],
                   ],
                 );
@@ -261,7 +274,6 @@ class _HeaderContent extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.badgeColor,
-    required this.highlights,
     this.eyebrow,
     this.statusLabel,
     this.headerIcon,
@@ -273,7 +285,6 @@ class _HeaderContent extends StatelessWidget {
   final String? statusLabel;
   final Color badgeColor;
   final IconData? headerIcon;
-  final List<PageHeaderHighlight> highlights;
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +312,7 @@ class _HeaderContent extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (headerIcon != null) ...[
               Container(
@@ -345,17 +356,6 @@ class _HeaderContent extends StatelessWidget {
             ),
           ],
         ),
-        if (highlights.isNotEmpty) ...[
-          const SizedBox(height: 22),
-          Wrap(
-            spacing: 14,
-            runSpacing: 14,
-            children: [
-              for (final highlight in highlights)
-                _HeaderHighlightCard(highlight: highlight),
-            ],
-          ),
-        ],
       ],
     );
   }
@@ -364,14 +364,16 @@ class _HeaderContent extends StatelessWidget {
 class _HeaderActionPanel extends StatelessWidget {
   const _HeaderActionPanel({
     required this.actions,
+    required this.expand,
   });
 
   final List<Widget> actions;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
+      width: expand ? double.infinity : null,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
@@ -394,13 +396,60 @@ class _HeaderActionPanel extends StatelessWidget {
           OverflowBar(
             spacing: 10,
             overflowSpacing: 10,
-            alignment: MainAxisAlignment.start,
-            overflowAlignment: OverflowBarAlignment.start,
+            alignment: expand ? MainAxisAlignment.start : MainAxisAlignment.end,
+            overflowAlignment:
+                expand ? OverflowBarAlignment.start : OverflowBarAlignment.end,
             children: actions,
           ),
         ],
       ),
     );
+  }
+}
+
+class _HeaderHighlightGrid extends StatelessWidget {
+  const _HeaderHighlightGrid({
+    required this.highlights,
+  });
+
+  final List<PageHeaderHighlight> highlights;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 14.0;
+        final columns =
+            _columnsForWidth(constraints.maxWidth, highlights.length);
+        final itemWidth = columns == 1
+            ? constraints.maxWidth
+            : (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final highlight in highlights)
+              SizedBox(
+                width: itemWidth,
+                child: _HeaderHighlightCard(highlight: highlight),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  int _columnsForWidth(double width, int count) {
+    if (width >= 1080 && count >= 3) {
+      return 3;
+    }
+
+    if (width >= 680 && count >= 2) {
+      return 2;
+    }
+
+    return 1;
   }
 }
 
@@ -441,7 +490,7 @@ class _HeaderHighlightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 148, maxWidth: 220),
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.10),
