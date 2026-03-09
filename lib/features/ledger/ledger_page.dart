@@ -19,17 +19,26 @@ class LedgerPage extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final entries = [
-      ...appState.expenses.map(_LedgerEntry.fromExpense),
-      ...appState.income.map(_LedgerEntry.fromIncome),
+    final receivedEntries = appState.income
+        .map(_LedgerEntry.fromIncome)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final expenseEntries = appState.expenses
+        .map(_LedgerEntry.fromExpense)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final allEntries = [
+      ...receivedEntries,
+      ...expenseEntries,
     ]..sort((a, b) => b.date.compareTo(a.date));
-    final latestActivity =
-        entries.isEmpty ? 'No activity yet' : formatDate(entries.first.date);
+    final latestActivity = allEntries.isEmpty
+        ? 'No activity yet'
+        : formatDate(allEntries.first.date);
 
     return PageScaffold(
       title: 'Ledger',
       subtitle:
-          'A combined view of outgoing expenses and incoming payments across all business activity.',
+          'Review payments received and expenses recorded in separate sections for quicker financial tracking.',
       eyebrow: 'Cash movement',
       headerIcon: Icons.receipt_long_rounded,
       accentColor: const Color(0xFF9A3412),
@@ -38,14 +47,14 @@ class LedgerPage extends StatelessWidget {
       highlights: [
         PageHeaderHighlight(
           label: 'Transactions',
-          value: '${entries.length}',
+          value: '${allEntries.length}',
         ),
         PageHeaderHighlight(
-          label: 'Incoming',
+          label: 'Received',
           value: formatMoney(appState.businessSummary.revenue),
         ),
         PageHeaderHighlight(
-          label: 'Outgoing',
+          label: 'Spent',
           value: formatMoney(appState.businessSummary.expenses),
         ),
       ],
@@ -61,20 +70,81 @@ class LedgerPage extends StatelessWidget {
           label: const Text('Filter'),
         ),
       ],
-      child: SectionCard(
-        title: 'Transactions',
-        child: Column(
-          children: [
-            for (var index = 0; index < entries.length; index++) ...[
-              _TransactionRow(
-                  entry: entries[index],
-                  contractTitle:
-                      appState.contractTitle(entries[index].contractId)),
-              if (index != entries.length - 1) const Divider(height: 24),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth > 980;
+          final sectionWidth =
+              wide ? (constraints.maxWidth - 24) / 2 : constraints.maxWidth;
+
+          return Wrap(
+            spacing: 24,
+            runSpacing: 24,
+            children: [
+              SizedBox(
+                width: sectionWidth,
+                child: _LedgerSection(
+                  title: 'Payments received',
+                  totalLabel: formatMoney(appState.businessSummary.revenue),
+                  emptyState: 'No payments have been recorded yet.',
+                  entries: receivedEntries,
+                  appState: appState,
+                ),
+              ),
+              SizedBox(
+                width: sectionWidth,
+                child: _LedgerSection(
+                  title: 'Expenses recorded',
+                  totalLabel: formatMoney(appState.businessSummary.expenses),
+                  emptyState: 'No expenses have been recorded yet.',
+                  entries: expenseEntries,
+                  appState: appState,
+                ),
+              ),
             ],
-          ],
-        ),
+          );
+        },
       ),
+    );
+  }
+}
+
+class _LedgerSection extends StatelessWidget {
+  const _LedgerSection({
+    required this.title,
+    required this.totalLabel,
+    required this.emptyState,
+    required this.entries,
+    required this.appState,
+  });
+
+  final String title;
+  final String totalLabel;
+  final String emptyState;
+  final List<_LedgerEntry> entries;
+  final AppState appState;
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      title: title,
+      trailing: _SectionTotalPill(
+        count: entries.length,
+        totalLabel: totalLabel,
+      ),
+      child: entries.isEmpty
+          ? Text(emptyState)
+          : Column(
+              children: [
+                for (var index = 0; index < entries.length; index++) ...[
+                  _TransactionRow(
+                    entry: entries[index],
+                    contractTitle:
+                        appState.contractTitle(entries[index].contractId),
+                  ),
+                  if (index != entries.length - 1) const Divider(height: 24),
+                ],
+              ],
+            ),
     );
   }
 }
@@ -121,6 +191,31 @@ class _LedgerEntry {
   final double amount;
   final String? contractId;
   final bool isIncome;
+}
+
+class _SectionTotalPill extends StatelessWidget {
+  const _SectionTotalPill({
+    required this.count,
+    required this.totalLabel,
+  });
+
+  final int count;
+  final String totalLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F3EB),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$count items | $totalLabel',
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    );
+  }
 }
 
 class _TransactionRow extends StatelessWidget {
