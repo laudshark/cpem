@@ -21,7 +21,9 @@ void main() {
     expect(csv, contains('CPEM Financial Report'));
     expect(csv, contains('Business summary'));
     expect(csv, contains('Municipal Road Rehabilitation'));
-    expect(csv, contains('Ledger'));
+    expect(csv, contains('Category spending'));
+    expect(csv, contains('Payments received'));
+    expect(csv, contains('Payment follow-up'));
     expect(csv, contains('Asset Disposal'));
   });
 

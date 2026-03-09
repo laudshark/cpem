@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../core/models/contract.dart';
 import '../../../core/models/expense.dart';
 import '../../../core/models/income.dart';
 import '../../../core/state/app_state.dart';
@@ -19,6 +20,12 @@ String buildReportFileName(String extension, DateTime generatedAt) {
 }
 
 String buildReportCsv(AppState appState, DateTime generatedAt) {
+  final categoryEntries = _sortedCategoryEntries(appState);
+  final contractRows = _buildContractRows(appState);
+  final incomeRows = _buildIncomeRows(appState);
+  final expenseRows = _buildExpenseRows(appState);
+  final overdueRows = _buildOverdueExpenses(appState);
+
   final rows = <List<String>>[
     ['CPEM Financial Report'],
     ['Generated at', _formatIsoTimestamp(generatedAt)],
@@ -36,6 +43,7 @@ String buildReportCsv(AppState appState, DateTime generatedAt) {
     ['Net profit / loss', _formatNumber(appState.businessSummary.profit)],
     ['Profit margin %', _formatNumber(appState.businessSummary.profitMargin)],
     ['Active contracts', '${appState.activeContractsCount}'],
+    ['General business expenses', _formatNumber(appState.generalExpenseTotal)],
     const [],
     ['Monthly trend'],
     ['Month', 'Revenue', 'Expenses', 'Profit', 'Margin %'],
@@ -49,13 +57,20 @@ String buildReportCsv(AppState appState, DateTime generatedAt) {
       ];
     }),
     const [],
-    ['Expense categories'],
-    ['Category', 'Amount'],
-    ..._sortedCategoryEntries(appState).map((entry) {
-      return [entry.key.label, _formatNumber(entry.value)];
+    ['Category spending'],
+    ['Category', 'Amount', 'Share of expenses %'],
+    ...categoryEntries.map((entry) {
+      final share = appState.businessSummary.expenses == 0
+          ? 0.0
+          : (entry.value / appState.businessSummary.expenses) * 100;
+      return [
+        entry.key.label,
+        _formatNumber(entry.value),
+        _formatNumber(share),
+      ];
     }),
     const [],
-    ['Contract profitability'],
+    ['Contract performance'],
     [
       'Contract',
       'Client',
@@ -68,34 +83,66 @@ String buildReportCsv(AppState appState, DateTime generatedAt) {
       'Margin %',
       'Budget utilization %',
     ],
-    ...appState.contracts.map((contract) {
-      final summary = appState.summaryForContract(contract.id);
+    ...contractRows.map((row) {
       return [
-        contract.title,
-        contract.clientName,
-        contract.status.label,
-        _formatNumber(contract.contractValue),
-        _formatNumber(contract.budgetAmount),
-        _formatNumber(summary.revenue),
-        _formatNumber(summary.expenses),
-        _formatNumber(summary.profit),
-        _formatNumber(summary.profitMargin),
-        _formatNumber(appState.budgetUtilizationForContract(contract.id)),
+        row.contract.title,
+        row.contract.clientName,
+        row.contract.status.label,
+        _formatNumber(row.contract.contractValue),
+        _formatNumber(row.contract.budgetAmount),
+        _formatNumber(row.revenue),
+        _formatNumber(row.expenses),
+        _formatNumber(row.profit),
+        _formatNumber(row.margin),
+        _formatNumber(row.budgetUtilization),
       ];
     }),
     const [],
-    ['Ledger'],
-    ['Date', 'Direction', 'Type', 'Counterparty', 'Contract', 'Amount'],
-    ..._buildTransactions(appState).map((entry) {
+    ['Payments received'],
+    ['Date', 'Type', 'Payer', 'Contract', 'Amount'],
+    ...incomeRows.map((entry) {
       return [
         _formatIsoDate(entry.date),
-        entry.isIncome ? 'Income' : 'Expense',
         entry.secondaryLabel,
         entry.counterparty,
         appState.contractTitle(entry.contractId),
         _formatNumber(entry.amount),
       ];
     }),
+    const [],
+    ['Expenses recorded'],
+    ['Date', 'Category', 'Vendor', 'Contract', 'Amount'],
+    ...expenseRows.map((entry) {
+      return [
+        _formatIsoDate(entry.date),
+        entry.secondaryLabel,
+        entry.counterparty,
+        appState.contractTitle(entry.contractId),
+        _formatNumber(entry.amount),
+      ];
+    }),
+    const [],
+    ['Payment follow-up'],
+    ['Vendor', 'Contract', 'Category', 'Due date', 'Amount'],
+    ...overdueRows.map((expense) {
+      return [
+        expense.vendor,
+        appState.contractTitle(expense.contractId),
+        expense.category.label,
+        expense.dueDate == null ? '' : _formatIsoDate(expense.dueDate!),
+        _formatNumber(expense.amount),
+      ];
+    }),
+    const [],
+    ['Export categories'],
+    ['Category'],
+    ['Executive summary'],
+    ['Monthly trend'],
+    ['Category spending'],
+    ['Contract performance'],
+    ['Payments received'],
+    ['Expenses recorded'],
+    ['Payment follow-up'],
   ];
 
   return rows.map(_csvRow).join('\n');
@@ -105,6 +152,10 @@ Future<Uint8List> buildReportPdf(
     AppState appState, DateTime generatedAt) async {
   final document = pw.Document();
   final summary = appState.businessSummary;
+  final contractRows = _buildContractRows(appState);
+  final incomeRows = _buildIncomeRows(appState);
+  final expenseRows = _buildExpenseRows(appState);
+  final overdueRows = _buildOverdueExpenses(appState);
 
   document.addPage(
     pw.MultiPage(
@@ -150,37 +201,11 @@ Future<Uint8List> buildReportPdf(
                 ['Net profit / loss', formatMoney(summary.profit)],
                 ['Profit margin', formatPercent(summary.profitMargin)],
                 ['Active contracts', '${appState.activeContractsCount}'],
+                [
+                  'General business expenses',
+                  formatMoney(appState.generalExpenseTotal),
+                ],
               ],
-            ),
-          ),
-          _pdfSection(
-            title: 'Contract profitability',
-            child: pw.TableHelper.fromTextArray(
-              headers: const [
-                'Contract',
-                'Status',
-                'Revenue',
-                'Expenses',
-                'Performance'
-              ],
-              headerStyle: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                color: PdfColors.white,
-              ),
-              headerDecoration:
-                  const pw.BoxDecoration(color: PdfColors.blueGrey800),
-              cellPadding: const pw.EdgeInsets.all(6),
-              data: appState.contracts.map((contract) {
-                final contractSummary =
-                    appState.summaryForContract(contract.id);
-                return [
-                  contract.title,
-                  contract.status.label,
-                  formatMoney(contractSummary.revenue),
-                  formatMoney(contractSummary.expenses),
-                  '${formatMoney(contractSummary.profit)} / ${formatPercent(contractSummary.profitMargin)}',
-                ];
-              }).toList(),
             ),
           ),
           _pdfSection(
@@ -205,9 +230,9 @@ Future<Uint8List> buildReportPdf(
             ),
           ),
           _pdfSection(
-            title: 'Expense categories',
+            title: 'Category spending',
             child: pw.TableHelper.fromTextArray(
-              headers: const ['Category', 'Amount'],
+              headers: const ['Category', 'Amount', 'Share %'],
               headerStyle: pw.TextStyle(
                 fontWeight: pw.FontWeight.bold,
                 color: PdfColors.white,
@@ -216,20 +241,76 @@ Future<Uint8List> buildReportPdf(
                   const pw.BoxDecoration(color: PdfColors.blueGrey800),
               cellPadding: const pw.EdgeInsets.all(6),
               data: _sortedCategoryEntries(appState).map((entry) {
+                final share = summary.expenses == 0
+                    ? 0.0
+                    : (entry.value / summary.expenses) * 100;
                 return [
                   entry.key.label,
                   formatMoney(entry.value),
+                  formatPercent(share),
                 ];
               }).toList(),
             ),
           ),
           _pdfSection(
-            title: 'Recent ledger',
+            title: 'Contract performance',
+            child: pw.TableHelper.fromTextArray(
+              headers: const [
+                'Contract',
+                'Status',
+                'Revenue',
+                'Expenses',
+                'Profit',
+                'Budget used'
+              ],
+              headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.blueGrey800),
+              cellPadding: const pw.EdgeInsets.all(6),
+              data: contractRows.map((row) {
+                return [
+                  row.contract.title,
+                  row.contract.status.label,
+                  formatMoney(row.revenue),
+                  formatMoney(row.expenses),
+                  formatMoney(row.profit),
+                  formatPercent(row.budgetUtilization),
+                ];
+              }).toList(),
+            ),
+          ),
+          _pdfSection(
+            title: 'Payments received',
+            child: pw.TableHelper.fromTextArray(
+              headers: const ['Date', 'Type', 'Payer', 'Contract', 'Amount'],
+              headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.blueGrey800),
+              cellPadding: const pw.EdgeInsets.all(6),
+              data: incomeRows.map((entry) {
+                return [
+                  _formatIsoDate(entry.date),
+                  entry.secondaryLabel,
+                  entry.counterparty,
+                  appState.contractTitle(entry.contractId),
+                  formatMoney(entry.amount),
+                ];
+              }).toList(),
+            ),
+          ),
+          _pdfSection(
+            title: 'Expenses recorded',
             child: pw.TableHelper.fromTextArray(
               headers: const [
                 'Date',
-                'Direction',
-                'Type',
+                'Category',
+                'Vendor',
                 'Contract',
                 'Amount'
               ],
@@ -240,17 +321,69 @@ Future<Uint8List> buildReportPdf(
               headerDecoration:
                   const pw.BoxDecoration(color: PdfColors.blueGrey800),
               cellPadding: const pw.EdgeInsets.all(6),
-              data: _buildTransactions(appState).take(12).map((entry) {
+              data: expenseRows.map((entry) {
                 return [
                   _formatIsoDate(entry.date),
-                  entry.isIncome ? 'Income' : 'Expense',
                   entry.secondaryLabel,
+                  entry.counterparty,
                   appState.contractTitle(entry.contractId),
-                  entry.isIncome
-                      ? '+${formatMoney(entry.amount)}'
-                      : '-${formatMoney(entry.amount)}',
+                  formatMoney(entry.amount),
                 ];
               }).toList(),
+            ),
+          ),
+          _pdfSection(
+            title: 'Payment follow-up',
+            child: overdueRows.isEmpty
+                ? pw.Text('No overdue supplier payments.')
+                : pw.TableHelper.fromTextArray(
+                    headers: const [
+                      'Vendor',
+                      'Contract',
+                      'Category',
+                      'Due date',
+                      'Amount'
+                    ],
+                    headerStyle: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.white,
+                    ),
+                    headerDecoration:
+                        const pw.BoxDecoration(color: PdfColors.blueGrey800),
+                    cellPadding: const pw.EdgeInsets.all(6),
+                    data: overdueRows.map((expense) {
+                      return [
+                        expense.vendor,
+                        appState.contractTitle(expense.contractId),
+                        expense.category.label,
+                        expense.dueDate == null
+                            ? ''
+                            : _formatIsoDate(expense.dueDate!),
+                        formatMoney(expense.amount),
+                      ];
+                    }).toList(),
+                  ),
+          ),
+          _pdfSection(
+            title: 'Export categories',
+            child: pw.TableHelper.fromTextArray(
+              headers: const ['Included bundle'],
+              headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.blueGrey800),
+              cellPadding: const pw.EdgeInsets.all(6),
+              data: const [
+                ['Executive summary'],
+                ['Monthly trend'],
+                ['Category spending'],
+                ['Contract performance'],
+                ['Payments received'],
+                ['Expenses recorded'],
+                ['Payment follow-up'],
+              ],
             ),
           ),
         ];
@@ -292,11 +425,37 @@ List<MapEntry<ExpenseCategory, double>> _sortedCategoryEntries(
   return items;
 }
 
-List<_ReportTransaction> _buildTransactions(AppState appState) {
-  final expenseItems = appState.expenses.map(_ReportTransaction.fromExpense);
-  final incomeItems = appState.income.map(_ReportTransaction.fromIncome);
-  final items = [...expenseItems, ...incomeItems];
+List<_ContractExportRow> _buildContractRows(AppState appState) {
+  final rows = appState.contracts.map((contract) {
+    final summary = appState.summaryForContract(contract.id);
+    return _ContractExportRow(
+      contract: contract,
+      revenue: summary.revenue,
+      expenses: summary.expenses,
+      profit: summary.profit,
+      margin: summary.profitMargin,
+      budgetUtilization: appState.budgetUtilizationForContract(contract.id),
+    );
+  }).toList();
+  rows.sort((a, b) => b.profit.compareTo(a.profit));
+  return rows;
+}
+
+List<_ReportTransaction> _buildIncomeRows(AppState appState) {
+  final items = appState.income.map(_ReportTransaction.fromIncome).toList();
   items.sort((a, b) => b.date.compareTo(a.date));
+  return items;
+}
+
+List<_ReportTransaction> _buildExpenseRows(AppState appState) {
+  final items = appState.expenses.map(_ReportTransaction.fromExpense).toList();
+  items.sort((a, b) => b.date.compareTo(a.date));
+  return items;
+}
+
+List<ExpenseRecord> _buildOverdueExpenses(AppState appState) {
+  final items = [...appState.overdueSupplierExpenses];
+  items.sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
   return items;
 }
 
@@ -331,6 +490,24 @@ String _formatTime(DateTime date) {
   final hour = date.hour.toString().padLeft(2, '0');
   final minute = date.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
+}
+
+class _ContractExportRow {
+  const _ContractExportRow({
+    required this.contract,
+    required this.revenue,
+    required this.expenses,
+    required this.profit,
+    required this.margin,
+    required this.budgetUtilization,
+  });
+
+  final ContractRecord contract;
+  final double revenue;
+  final double expenses;
+  final double profit;
+  final double margin;
+  final double budgetUtilization;
 }
 
 class _ReportTransaction {
