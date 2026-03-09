@@ -65,7 +65,14 @@ class LedgerPage extends StatelessWidget {
           label: const Text('Add income'),
         ),
         OutlinedButton.icon(
-          onPressed: null,
+          onPressed: () => _showFilterNotice(context),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white.withValues(alpha: 0.92),
+            backgroundColor: Colors.white.withValues(alpha: 0.06),
+            side: BorderSide(
+              color: Colors.white.withValues(alpha: 0.24),
+            ),
+          ),
           icon: const Icon(Icons.tune),
           label: const Text('Filter'),
         ),
@@ -103,6 +110,14 @@ class LedgerPage extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showFilterNotice(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Transaction filters will be added next.'),
       ),
     );
   }
