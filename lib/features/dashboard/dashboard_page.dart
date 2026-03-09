@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/app_notification.dart';
+import '../../core/models/financial_summary.dart';
 import '../../core/state/app_state.dart';
 import '../../core/utils/formatters.dart';
 import '../../shared/forms/expense_form_sheet.dart';
@@ -56,6 +57,18 @@ class DashboardPage extends StatelessWidget {
       ],
       child: Column(
         children: [
+          _OverviewHero(
+            summary: summary,
+            activeContractsCount: appState.activeContractsCount,
+            weeklySpending: appState.weeklySpending,
+            monthlySpending: appState.monthlySpending,
+            syncStatusLabel: syncStatus.isOnline ? 'Online' : 'Offline',
+            syncStatusColor: syncStatus.isOnline
+                ? const Color(0xFF86EFAC)
+                : const Color(0xFFFCD34D),
+            pendingSyncEntries: syncStatus.pendingChanges,
+          ),
+          const SizedBox(height: 28),
           LayoutBuilder(
             builder: (context, constraints) {
               final width = _metricWidth(constraints.maxWidth);
@@ -329,7 +342,19 @@ class _LedgerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: amountColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child:
+              Icon(Icons.receipt_long_outlined, color: amountColor, size: 20),
+        ),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,6 +380,140 @@ class _LedgerRow extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _OverviewHero extends StatelessWidget {
+  const _OverviewHero({
+    required this.summary,
+    required this.activeContractsCount,
+    required this.weeklySpending,
+    required this.monthlySpending,
+    required this.syncStatusLabel,
+    required this.syncStatusColor,
+    required this.pendingSyncEntries,
+  });
+
+  final FinancialSummary summary;
+  final int activeContractsCount;
+  final double weeklySpending;
+  final double monthlySpending;
+  final String syncStatusLabel;
+  final Color syncStatusColor;
+  final int pendingSyncEntries;
+
+  @override
+  Widget build(BuildContext context) {
+    final positive = summary.profit >= 0;
+    final balanceColor =
+        positive ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0E5D58),
+            Color(0xFF17344B),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -36,
+            right: -18,
+            child: _HeroGlow(
+              size: 150,
+              color: const Color(0x33F59E0B),
+            ),
+          ),
+          Positioned(
+            bottom: -70,
+            left: -34,
+            child: _HeroGlow(
+              size: 190,
+              color: const Color(0x2206B6D4),
+            ),
+          ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth > 760;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _HeroBadge(
+                        label: 'Operating snapshot',
+                        backgroundColor: Colors.white.withValues(alpha: 0.14),
+                        textColor: Colors.white,
+                      ),
+                      _HeroBadge(
+                        label: syncStatusLabel,
+                        backgroundColor:
+                            syncStatusColor.withValues(alpha: 0.18),
+                        textColor: syncStatusColor,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (wide)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: _HeroSummary(
+                            profit: summary.profit,
+                            profitMargin: summary.profitMargin,
+                            revenue: summary.revenue,
+                            expenses: summary.expenses,
+                            activeContractsCount: activeContractsCount,
+                            balanceColor: balanceColor,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          flex: 2,
+                          child: _HeroStatsPanel(
+                            weeklySpending: weeklySpending,
+                            monthlySpending: monthlySpending,
+                            pendingSyncEntries: pendingSyncEntries,
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    _HeroSummary(
+                      profit: summary.profit,
+                      profitMargin: summary.profitMargin,
+                      revenue: summary.revenue,
+                      expenses: summary.expenses,
+                      activeContractsCount: activeContractsCount,
+                      balanceColor: balanceColor,
+                    ),
+                    const SizedBox(height: 20),
+                    _HeroStatsPanel(
+                      weeklySpending: weeklySpending,
+                      monthlySpending: monthlySpending,
+                      pendingSyncEntries: pendingSyncEntries,
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -418,6 +577,7 @@ class _CategoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = maxAmount == 0 ? 0.0 : amount / maxAmount;
+    final share = progress * 100;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,7 +587,17 @@ class _CategoryRow extends StatelessWidget {
             Expanded(
                 child: Text(label,
                     style: Theme.of(context).textTheme.titleMedium)),
-            Text(formatMoney(amount)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(formatMoney(amount)),
+                const SizedBox(height: 2),
+                Text(
+                  '${share.toStringAsFixed(0)}% of top spend',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -481,14 +651,247 @@ class _NotificationRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(notification.title,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(notification.title,
+                        style: Theme.of(context).textTheme.titleMedium),
+                  ),
+                  _SeverityPill(
+                    label: switch (notification.severity) {
+                      AppNotificationSeverity.info => 'Info',
+                      AppNotificationSeverity.warning => 'Warning',
+                      AppNotificationSeverity.critical => 'Critical',
+                    },
+                    color: accent,
+                  ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(notification.message),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HeroSummary extends StatelessWidget {
+  const _HeroSummary({
+    required this.profit,
+    required this.profitMargin,
+    required this.revenue,
+    required this.expenses,
+    required this.activeContractsCount,
+    required this.balanceColor,
+  });
+
+  final double profit;
+  final double profitMargin;
+  final double revenue;
+  final double expenses;
+  final int activeContractsCount;
+  final Color balanceColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Net operating position',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.white.withValues(alpha: 0.88),
+              ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          formatMoney(profit),
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Colors.white,
+                fontSize: 40,
+                height: 1,
+              ),
+        ),
+        const SizedBox(height: 12),
+        _HeroBadge(
+          label: 'Margin ${formatPercent(profitMargin)}',
+          backgroundColor: balanceColor.withValues(alpha: 0.16),
+          textColor: balanceColor,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Revenue ${formatMoney(revenue)} against expenses ${formatMoney(expenses)} across $activeContractsCount active contracts.',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Colors.white.withValues(alpha: 0.82),
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroStatsPanel extends StatelessWidget {
+  const _HeroStatsPanel({
+    required this.weeklySpending,
+    required this.monthlySpending,
+    required this.pendingSyncEntries,
+  });
+
+  final double weeklySpending;
+  final double monthlySpending;
+  final int pendingSyncEntries;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        children: [
+          _HeroStatTile(
+            label: 'This week',
+            value: formatMoney(weeklySpending),
+          ),
+          const SizedBox(height: 14),
+          _HeroStatTile(
+            label: 'This month',
+            value: formatMoney(monthlySpending),
+          ),
+          const SizedBox(height: 14),
+          _HeroStatTile(
+            label: 'Pending sync',
+            value:
+                pendingSyncEntries == 0 ? 'All clear' : '$pendingSyncEntries',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroStatTile extends StatelessWidget {
+  const _HeroStatTile({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.74),
+                  ),
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroBadge extends StatelessWidget {
+  const _HeroBadge({
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: textColor,
+            ),
+      ),
+    );
+  }
+}
+
+class _HeroGlow extends StatelessWidget {
+  const _HeroGlow({
+    required this.size,
+    required this.color,
+  });
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _SeverityPill extends StatelessWidget {
+  const _SeverityPill({
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
     );
   }
 }
