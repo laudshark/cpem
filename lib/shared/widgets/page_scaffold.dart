@@ -201,133 +201,202 @@ class _SpotlightHeader extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final wide = constraints.maxWidth > 880;
+                final wide = constraints.maxWidth > 960;
 
-                return Wrap(
-                  spacing: 20,
-                  runSpacing: 20,
-                  crossAxisAlignment: WrapCrossAlignment.start,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: wide
-                          ? (constraints.maxWidth - 20) * 0.62
-                          : constraints.maxWidth,
-                      child: Column(
+                    if (wide)
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              if (eyebrow != null)
-                                _HeaderBadge(
-                                  label: eyebrow!,
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.12),
-                                  textColor: Colors.white,
-                                ),
-                              if (statusLabel != null)
-                                _HeaderBadge(
-                                  label: statusLabel!,
-                                  backgroundColor:
-                                      badgeColor.withValues(alpha: 0.18),
-                                  textColor: badgeColor,
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          if (headerIcon != null) ...[
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Icon(
-                                headerIcon,
-                                color: Colors.white,
-                                size: 30,
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                          ],
-                          Text(
-                            title,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 34,
-                                ),
-                          ),
-                          const SizedBox(height: 10),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 640),
-                            child: Text(
-                              subtitle,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.80),
-                                  ),
+                          Expanded(
+                            child: _HeaderContent(
+                              title: title,
+                              subtitle: subtitle,
+                              eyebrow: eyebrow,
+                              statusLabel: statusLabel,
+                              badgeColor: badgeColor,
+                              headerIcon: headerIcon,
+                              highlights: highlights,
                             ),
                           ),
-                          if (highlights.isNotEmpty) ...[
-                            const SizedBox(height: 22),
-                            Wrap(
-                              spacing: 14,
-                              runSpacing: 14,
-                              children: [
-                                for (final highlight in highlights)
-                                  _HeaderHighlightCard(highlight: highlight),
-                              ],
+                          if (actions.isNotEmpty) ...[
+                            const SizedBox(width: 20),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 320),
+                              child: _HeaderActionPanel(actions: actions),
                             ),
                           ],
                         ],
+                      )
+                    else ...[
+                      _HeaderContent(
+                        title: title,
+                        subtitle: subtitle,
+                        eyebrow: eyebrow,
+                        statusLabel: statusLabel,
+                        badgeColor: badgeColor,
+                        headerIcon: headerIcon,
+                        highlights: highlights,
                       ),
-                    ),
-                    if (actions.isNotEmpty)
-                      SizedBox(
-                        width: wide
-                            ? (constraints.maxWidth - 20) * 0.38
-                            : constraints.maxWidth,
-                        child: Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Quick actions',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(color: Colors.white),
-                              ),
-                              const SizedBox(height: 14),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: actions,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      if (actions.isNotEmpty) ...[
+                        const SizedBox(height: 18),
+                        _HeaderActionPanel(actions: actions),
+                      ],
+                    ],
                   ],
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderContent extends StatelessWidget {
+  const _HeaderContent({
+    required this.title,
+    required this.subtitle,
+    required this.badgeColor,
+    required this.highlights,
+    this.eyebrow,
+    this.statusLabel,
+    this.headerIcon,
+  });
+
+  final String title;
+  final String subtitle;
+  final String? eyebrow;
+  final String? statusLabel;
+  final Color badgeColor;
+  final IconData? headerIcon;
+  final List<PageHeaderHighlight> highlights;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (eyebrow != null)
+              _HeaderBadge(
+                label: eyebrow!,
+                backgroundColor: Colors.white.withValues(alpha: 0.12),
+                textColor: Colors.white,
+              ),
+            if (statusLabel != null)
+              _HeaderBadge(
+                label: statusLabel!,
+                backgroundColor: badgeColor.withValues(alpha: 0.18),
+                textColor: badgeColor,
+              ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (headerIcon != null) ...[
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Icon(
+                  headerIcon,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: 16),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontSize: 34,
+                        ),
+                  ),
+                  const SizedBox(height: 10),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.80),
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (highlights.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          Wrap(
+            spacing: 14,
+            runSpacing: 14,
+            children: [
+              for (final highlight in highlights)
+                _HeaderHighlightCard(highlight: highlight),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _HeaderActionPanel extends StatelessWidget {
+  const _HeaderActionPanel({
+    required this.actions,
+  });
+
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick actions',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 14),
+          OverflowBar(
+            spacing: 10,
+            overflowSpacing: 10,
+            alignment: MainAxisAlignment.start,
+            overflowAlignment: OverflowBarAlignment.start,
+            children: actions,
           ),
         ],
       ),
