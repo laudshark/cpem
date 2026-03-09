@@ -23,11 +23,32 @@ class LedgerPage extends StatelessWidget {
       ...appState.expenses.map(_LedgerEntry.fromExpense),
       ...appState.income.map(_LedgerEntry.fromIncome),
     ]..sort((a, b) => b.date.compareTo(a.date));
+    final latestActivity =
+        entries.isEmpty ? 'No activity yet' : formatDate(entries.first.date);
 
     return PageScaffold(
       title: 'Ledger',
       subtitle:
           'A combined view of outgoing expenses and incoming payments across all business activity.',
+      eyebrow: 'Cash movement',
+      headerIcon: Icons.receipt_long_rounded,
+      accentColor: const Color(0xFF9A3412),
+      statusLabel: latestActivity,
+      statusColor: const Color(0xFFFDE68A),
+      highlights: [
+        PageHeaderHighlight(
+          label: 'Transactions',
+          value: '${entries.length}',
+        ),
+        PageHeaderHighlight(
+          label: 'Incoming',
+          value: formatMoney(appState.businessSummary.revenue),
+        ),
+        PageHeaderHighlight(
+          label: 'Outgoing',
+          value: formatMoney(appState.businessSummary.expenses),
+        ),
+      ],
       actions: [
         FilledButton.icon(
           onPressed: () => showIncomeFormSheet(context, appState),

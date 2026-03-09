@@ -32,6 +32,7 @@ class DashboardPage extends StatelessWidget {
       title: 'Contract Profit & Expense Manager',
       subtitle:
           'Track contracts, daily spending, offline capture, incoming payments, and profitability from one operational view.',
+      headerVariant: PageHeaderVariant.plain,
       actions: [
         FilledButton.icon(
           onPressed: () => showExpenseFormSheet(context, appState),

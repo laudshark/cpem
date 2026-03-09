@@ -18,10 +18,40 @@ class ContractsPage extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final activeContracts = appState.contracts
+        .where((contract) => contract.status == ContractStatus.active)
+        .length;
+    final completedContracts = appState.contracts
+        .where((contract) => contract.status == ContractStatus.completed)
+        .length;
+    final pipelineValue = appState.contracts.fold<double>(
+      0,
+      (sum, contract) => sum + contract.contractValue,
+    );
+
     return PageScaffold(
       title: 'Contracts',
       subtitle:
           'Review contract value, progress windows, and live profitability for each project.',
+      eyebrow: 'Portfolio control',
+      headerIcon: Icons.assignment_rounded,
+      accentColor: const Color(0xFF0F766E),
+      statusLabel: '${appState.contracts.length} tracked',
+      statusColor: const Color(0xFF93C5FD),
+      highlights: [
+        PageHeaderHighlight(
+          label: 'Active contracts',
+          value: '$activeContracts',
+        ),
+        PageHeaderHighlight(
+          label: 'Pipeline value',
+          value: formatMoney(pipelineValue),
+        ),
+        PageHeaderHighlight(
+          label: 'Completed',
+          value: '$completedContracts',
+        ),
+      ],
       actions: [
         FilledButton.icon(
           onPressed: () => showContractFormSheet(context, appState),

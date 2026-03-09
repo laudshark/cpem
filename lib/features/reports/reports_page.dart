@@ -54,6 +54,26 @@ class _ReportsPageState extends State<ReportsPage> {
       title: 'Reports & analytics',
       subtitle:
           'Review profitability trends, spending patterns, and export targets for formal reporting.',
+      eyebrow: 'Reporting center',
+      headerIcon: Icons.analytics_rounded,
+      accentColor: const Color(0xFF1D4ED8),
+      statusLabel:
+          appState.syncStatus.isOnline ? 'Export ready' : 'Offline ready',
+      statusColor: const Color(0xFFBFDBFE),
+      highlights: [
+        PageHeaderHighlight(
+          label: 'Months tracked',
+          value: '${monthlyEntries.length}',
+        ),
+        PageHeaderHighlight(
+          label: 'Completed contracts',
+          value: '$completedContracts',
+        ),
+        PageHeaderHighlight(
+          label: 'Top category',
+          value: topCategory == null ? 'No spend yet' : topCategory.key.label,
+        ),
+      ],
       actions: [
         FilledButton.icon(
           onPressed: _isExportingPdf || _isExportingCsv
